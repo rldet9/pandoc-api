@@ -5,7 +5,7 @@ import * as util from 'util';
 import * as _ from 'lodash';
 
 import { ApiError } from './errors';
-import { availableValues, tmpDir, extensions } from './constants';
+import { availableValues, tmpDir, extensions, stringValueOptions } from './constants';
 
 const exec = util.promisify(childProcess.exec);
 
@@ -195,6 +195,10 @@ export class Converter {
         option.type = 'enum';
         option.values = values;
       }
+      // Force certain options to be string type if they require a value
+      if (stringValueOptions.includes(option.defaultName)) {
+        option.type = 'string';
+      }
       options.push(option);
     });
     help.push('');
@@ -204,12 +208,31 @@ export class Converter {
   }
 
   parseUrlCommand(commands: string): CommandOptions {
-    const list = commands.split('/');
+    // Decode the URL-encoded command string
+    const decoded = decodeURIComponent(commands);
+    const list = decoded.split('/');
     const options = new CommandOptions(this.optionMap);
-    const pairs = _.chunk(list, 2);
-    pairs.forEach(([key, value]) => {
+    
+    // Parse key-value pairs, handling empty strings from leading slashes in values
+    for (let i = 0; i < list.length; i += 2) {
+      const key = list[i];
+      let value = list[i + 1] || '';
+      
+      // If value is empty and next item exists, it means we had a leading slash
+      // Reconstruct the value by joining consecutive parts until we hit the next known option
+      if (value === '' && i + 2 < list.length) {
+        const parts = [value];
+        let j = i + 2;
+        while (j < list.length && !this.optionMap.has(list[j])) {
+          parts.push(list[j]);
+          j++;
+        }
+        value = parts.join('/');
+        i = j - 2; // Adjust index to account for consumed parts
+      }
+      
       options.set(key, value);
-    });
+    }
     return options;
   }
 

@@ -61,3 +61,8 @@ typings/
 .next
 
 /lib
+
+# Test files
+test*.md
+test*.docx
+*.dotx

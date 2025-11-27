@@ -1,0 +1,2 @@
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lfdeploy-production.sh text eol=lf
