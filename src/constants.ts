@@ -1,6 +1,7 @@
 import * as os from 'os';
 
 export const tmpDir = `${os.tmpdir()}/pandoc-api`;
+export const templatesDir = process.env.TEMPLATES_DIR || `${os.tmpdir()}/pandoc-api/templates`;
 
 // Options that require a string value (file path, template, etc.)
 // These are options that pandoc expects a value for, but may not be detected correctly by the help parser

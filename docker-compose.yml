@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  pandoc-api:
+    image: rderet/pandoc-api:2025-11-28-1
+    container_name: pandoc-api-test
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TEMPLATES_DIR=/templates
+    volumes:
+      # Volume pour persister les templates
+      # Assurez-vous que le dossier existe sur l'hôte avec: mkdir -p /data/swarm_volume_local/m3-n8n-01/pandoc/templates
+      - /data/swarm_volume_local/m3-n8n-01/pandoc/templates:/templates:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

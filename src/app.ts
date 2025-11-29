@@ -9,6 +9,7 @@ import * as contentDisposition from 'content-disposition';
 import { Converter } from './converter';
 import { ApiError, errorHandler } from './errors';
 import { storage, uploadRaw } from './storage';
+import * as templates from './templates';
 
 const packageJson = require('../package.json');
 
@@ -18,6 +19,9 @@ export function createApp() {
   const upload = multer({
     storage: storage,
   });
+  
+  // Initialiser le dossier templates au démarrage
+  templates.initTemplatesDirectory();
   
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.path}`);
@@ -33,6 +37,38 @@ export function createApp() {
     res.set('Content-Type', 'text/plain');
     res.send(converter.getHelpText());
   });
+
+  // Templates management routes
+  app.get('/api/templates', wrap(async (req, res) => {
+    const format = req.query.format as string | undefined;
+    const templatesList = await templates.listTemplates(format);
+    res.json({ templates: templatesList });
+  }));
+
+  app.post('/api/templates/:format', upload.single('file'), wrap(async (req, res) => {
+    const { format } = req.params;
+    const { file } = req;
+    const name = req.query.name as string | undefined;
+
+    if (!file) {
+      throw new ApiError(400, 'invalid_file', 'No file provided');
+    }
+
+    const template = await templates.addTemplate(file, format, name);
+    res.status(201).json({
+      message: 'Template added successfully',
+      template,
+    });
+  }));
+
+  app.delete('/api/templates/:format/:name', wrap(async (req, res) => {
+    const { format, name } = req.params;
+    await templates.deleteTemplate(format, name);
+    res.json({
+      message: 'Template deleted successfully',
+      template: { name, format },
+    });
+  }));
 
   app.post('/api/convert/:command(*)',
    uploadRaw(),

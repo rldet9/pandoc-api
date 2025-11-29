@@ -78,6 +78,117 @@ For more converting options, please visit [https://pandoc.org/MANUAL.html](https
 | `HOSTNAME` | For server listening hostname |
 | `PORT`     | For server listening port     |
 
+## Template Management
+
+The API provides endpoints to manage Pandoc templates for customizing document output. Templates allow you to control the final appearance of converted documents by defining custom headers, footers, layouts, and more.
+
+### Template Storage
+
+Templates are stored persistently in `${os.tmpdir()}/pandoc-api/templates/` organized by output format:
+- `templates/html/` for HTML templates
+- `templates/docx/` for DOCX templates
+- `templates/pdf/` for PDF templates
+- etc.
+
+### List Templates
+
+List all available templates or filter by format:
+
+```shell
+# List all templates
+curl http://127.0.0.1:4000/api/templates
+
+# Filter by format
+curl http://127.0.0.1:4000/api/templates?format=html
+```
+
+**Response:**
+```json
+{
+  "templates": [
+    {
+      "name": "custom-report",
+      "format": "html",
+      "size": 2048,
+      "createdAt": "2025-11-28T10:30:00Z",
+      "path": "/templates/html/custom-report.template"
+    }
+  ]
+}
+```
+
+### Add Template
+
+Upload a new template for a specific format:
+
+```shell
+# Add a template with custom name
+curl -F file=@my-template.html http://127.0.0.1:4000/api/templates/html?name=custom
+
+# Add a template using the original filename
+curl -F file=@corporate-template.docx http://127.0.0.1:4000/api/templates/docx
+```
+
+**Response:**
+```json
+{
+  "message": "Template added successfully",
+  "template": {
+    "name": "custom",
+    "format": "html",
+    "size": 2048,
+    "createdAt": "2025-11-28T10:30:00Z",
+    "path": "/templates/html/custom.template"
+  }
+}
+```
+
+### Delete Template
+
+Remove an existing template:
+
+```shell
+curl -X DELETE http://127.0.0.1:4000/api/templates/html/custom
+```
+
+**Response:**
+```json
+{
+  "message": "Template deleted successfully",
+  "template": {
+    "name": "custom",
+    "format": "html"
+  }
+}
+```
+
+### Error Responses
+
+The API returns appropriate error codes:
+- **400 Bad Request**: Invalid format or missing file
+- **404 Not Found**: Template not found
+- **409 Conflict**: Template with the same name already exists
+
+**Example error:**
+```json
+{
+  "status": 404,
+  "code": "template_not_found",
+  "message": "Template 'custom' not found for format 'html'"
+}
+```
+
+### Using Templates in Conversion
+
+To use a template during document conversion, add the `template` option to your conversion request:
+
+```shell
+curl -F file=@document.md \
+  http://127.0.0.1:4000/api/convert/from/markdown/to/html/template/custom > output.html
+```
+
+For more information about creating Pandoc templates, visit the [Pandoc Templates Documentation](https://pandoc.org/MANUAL.html#templates).
+
 ## Examples
 
 Visit `http://127.0.0.1:4000/help`, or get help in command-line:
