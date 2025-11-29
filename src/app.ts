@@ -6,12 +6,14 @@ import * as multer from 'multer';
 import * as uuid from 'uuid';
 import { wrap } from 'async-middleware';
 import * as contentDisposition from 'content-disposition';
+import * as swaggerUi from 'swagger-ui-express';
 import { Converter } from './converter';
 import { ApiError, errorHandler } from './errors';
 import { storage, uploadRaw } from './storage';
 import * as templates from './templates';
 
 const packageJson = require('../package.json');
+const openapiDocument = require('../openapi.json');
 
 export function createApp() {
   const app = express();
@@ -29,8 +31,23 @@ export function createApp() {
     next();
   });
 
+  // Swagger UI Documentation
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiDocument, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Pandoc API Documentation',
+  }));
+
+  // Serve OpenAPI specification as JSON
+  app.get('/openapi.json', (req, res) => {
+    res.json(openapiDocument);
+  });
+
   app.get('/', (req, res, next) => {
-    res.redirect('/api');
+    res.redirect('/api-docs');
+  });
+  
+  app.get('/api', (req, res, next) => {
+    res.redirect('/api-docs');
   });
   
   app.get('/api/help', (req, res, next) => {

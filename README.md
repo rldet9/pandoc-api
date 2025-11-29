@@ -2,6 +2,16 @@
 
 A simple RESTful server for converting documents using [pandoc](https://pandoc.org/)
 
+## 📚 API Documentation
+
+**Complete OpenAPI v3 specification and Swagger UI now available!**
+
+- **Swagger UI Interface**: http://localhost:4000/api-docs
+- **OpenAPI JSON Specification**: http://localhost:4000/openapi.json
+- **Detailed Documentation**: See [OPENAPI-README.md](OPENAPI-README.md)
+
+The API documentation provides complete details about all endpoints, request/response formats, and examples.
+
 ## Install
 
 [pandoc](https://pandoc.org/) is required for converting documents

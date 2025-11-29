@@ -1,0 +1,533 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pandoc API",
+    "description": "A simple RESTful server for converting documents using pandoc. This API provides endpoints for document conversion and template management.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "alphakevin",
+      "email": "get.so.smart@gmail.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Conversion",
+      "description": "Document conversion operations"
+    },
+    {
+      "name": "Templates",
+      "description": "Template management operations"
+    },
+    {
+      "name": "Information",
+      "description": "API information endpoints"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Information"],
+        "summary": "Redirect to /api",
+        "description": "Redirects the user to the /api endpoint",
+        "responses": {
+          "302": {
+            "description": "Redirect to /api"
+          }
+        }
+      }
+    },
+    "/api/help": {
+      "get": {
+        "tags": ["Information"],
+        "summary": "Get Pandoc converter help",
+        "description": "Returns the complete help text from pandoc, showing all available conversion options and formats",
+        "responses": {
+          "200": {
+            "description": "Pandoc help text",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "pandoc [OPTIONS] [FILES]\n  -f FORMAT, -r FORMAT  --from=FORMAT, --read=FORMAT\n  -t FORMAT, -w FORMAT  --to=FORMAT, --write=FORMAT\n  ..."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates": {
+      "get": {
+        "tags": ["Templates"],
+        "summary": "List all templates",
+        "description": "Retrieves a list of all available templates, optionally filtered by format",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Filter templates by output format (e.g., html, docx, pdf)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "html"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Template"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "templates": [
+                    {
+                      "name": "custom-report",
+                      "format": "html",
+                      "size": 2048,
+                      "createdAt": "2025-11-28T10:30:00Z",
+                      "path": "/templates/html/custom-report.template"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates/{format}": {
+      "post": {
+        "tags": ["Templates"],
+        "summary": "Add a new template",
+        "description": "Uploads and stores a new template for a specific format. The template will be available for use in document conversions.",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "description": "Output format for the template (e.g., html, docx, pdf)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "html"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Custom name for the template. If not provided, the original filename will be used.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "custom"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The template file to upload"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Template added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "template": {
+                      "$ref": "#/components/schemas/Template"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Template added successfully",
+                  "template": {
+                    "name": "custom",
+                    "format": "html",
+                    "size": 2048,
+                    "createdAt": "2025-11-28T10:30:00Z",
+                    "path": "/templates/html/custom.template"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/templates/{format}/{name}": {
+      "delete": {
+        "tags": ["Templates"],
+        "summary": "Delete a template",
+        "description": "Removes an existing template from storage",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "path",
+            "description": "Output format of the template",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "html"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of the template to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "custom"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "template": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "format": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Template deleted successfully",
+                  "template": {
+                    "name": "custom",
+                    "format": "html"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/convert/{command}": {
+      "post": {
+        "tags": ["Conversion"],
+        "summary": "Convert a document",
+        "description": "Converts a document from one format to another using Pandoc. The command parameter follows Pandoc's option syntax, where you can chain options like `/from/markdown/to/html/template/custom`. The converted document is returned in the response body.",
+        "parameters": [
+          {
+            "name": "command",
+            "in": "path",
+            "description": "Conversion command following Pandoc syntax. Use forward slashes instead of spaces. Common patterns: `/from/{format}/to/{format}`, `/f/{format}/t/{format}`, `/from/{format}/to/{format}/template/{name}`, `/from/{format}/to/{format}/output/{filename}`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "markdown-to-html": {
+                "value": "from/markdown/to/html",
+                "summary": "Convert Markdown to HTML"
+              },
+              "docx-to-pdf": {
+                "value": "from/docx/to/pdf",
+                "summary": "Convert DOCX to PDF"
+              },
+              "with-template": {
+                "value": "from/markdown/to/html/template/custom",
+                "summary": "Convert with custom template"
+              },
+              "with-output": {
+                "value": "from/markdown/to/pdf/output/report.pdf",
+                "summary": "Convert with custom output filename"
+              },
+              "short-form": {
+                "value": "f/md/t/html",
+                "summary": "Convert using short form (f=from, t=to)"
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The document file to convert"
+                  }
+                },
+                "required": ["file"]
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "Raw binary upload with Content-Type and Content-Disposition headers"
+              }
+            },
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "text/markdown": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "text/html": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Converted document",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Attachment header with the output filename",
+                "schema": {
+                  "type": "string",
+                  "example": "attachment; filename=\"document.html\""
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The converted document in the requested format"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Template": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Template name (without extension)",
+            "example": "custom-report"
+          },
+          "format": {
+            "type": "string",
+            "description": "Output format for which this template is designed",
+            "example": "html"
+          },
+          "size": {
+            "type": "number",
+            "description": "Template file size in bytes",
+            "example": 2048
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Template creation timestamp",
+            "example": "2025-11-28T10:30:00Z"
+          },
+          "path": {
+            "type": "string",
+            "description": "Relative path to the template file",
+            "example": "/templates/html/custom-report.template"
+          }
+        },
+        "required": ["name", "format", "size", "createdAt", "path"]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code",
+            "example": 400
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code identifier",
+            "example": "invalid_file"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "No file provided"
+          }
+        },
+        "required": ["status", "message"]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - Invalid input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "missing-file": {
+                "value": {
+                  "status": 400,
+                  "code": "invalid_file",
+                  "message": "No file provided"
+                }
+              },
+              "invalid-format": {
+                "value": {
+                  "status": 400,
+                  "code": "invalid_format",
+                  "message": "Invalid format specified"
+                }
+              },
+              "invalid-option": {
+                "value": {
+                  "status": 400,
+                  "code": "invalid_option",
+                  "message": "invalid option 'unknown'"
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "template-not-found": {
+                "value": {
+                  "status": 404,
+                  "code": "template_not_found",
+                  "message": "Template 'custom' not found for format 'html'"
+                }
+              },
+              "route-not-found": {
+                "value": {
+                  "status": 404,
+                  "code": "route_not_found",
+                  "message": "the requested path does not exist"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflict - Resource already exists",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": 409,
+              "code": "template_exists",
+              "message": "Template with name 'custom' already exists for format 'html'"
+            }
+          }
+        }
+      }
+    }
+  }
+}
